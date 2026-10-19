@@ -37,8 +37,17 @@ def format_name(names: pd.Series) -> pd.Series:
     space between. Same `.str` toolkit as `clean_employee_id`; no `apply`.
     """
     parts = names.str.split(",", n=1, expand=True)
-    first = parts.iloc[:, 1].str.strip() if parts.shape[1] > 1 else pd.Series(index=names.index, dtype="object")
-    last = parts.iloc[:, 0].str.strip() if parts.shape[1] > 1 else pd.Series(index=names.index, dtype="object")
+    empty_names = pd.Series(index=names.index, dtype="object")
+    first = (
+        parts.iloc[:, 1].str.strip()
+        if parts.shape[1] > 1
+        else empty_names
+    )
+    last = (
+        parts.iloc[:, 0].str.strip()
+        if parts.shape[1] > 1
+        else empty_names
+    )
     return (first + " " + last).str.strip()
 
 
@@ -59,7 +68,9 @@ def add_roster(history: pd.DataFrame, employees: pd.DataFrame) -> pd.DataFrame:
     `add_clean_columns` first — the raw `employeeid` does not match anything.
     """
     roster = employees.copy()
-    roster["display_name"] = format_name(roster["name"]) if "name" in roster.columns else pd.NA
+    roster["display_name"] = (
+        format_name(roster["name"]) if "name" in roster.columns else pd.NA
+    )
     roster = roster[["employee_id", "display_name", "department"]]
     return history.merge(roster, on="employee_id", how="left")
 
@@ -120,5 +131,14 @@ def summarize_employees(history: pd.DataFrame) -> pd.DataFrame:
         .reset_index(drop=True)
     )
     return summary[
-        ["employee_id", "display_name", "department", "weeks_paid", "total_hours", "total_pay", "avg_hours", "overtime_weeks"]
+        [
+            "employee_id",
+            "display_name",
+            "department",
+            "weeks_paid",
+            "total_hours",
+            "total_pay",
+            "avg_hours",
+            "overtime_weeks",
+        ]
     ]
