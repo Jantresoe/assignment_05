@@ -1,4 +1,4 @@
-Write your reflection here.
+While working on the payroll reporting app, I learned how to bring together data processing and a user-friendly interface by letting users upload payroll exports, filter the results by department and date, and review key information such as total hours, gross pay, monthly pay, and missed weeks. One important lesson was to keep the responsibilities of the app organized. The payroll package handles cleaning and analysis, while the Streamlit page focuses on presenting the results and responding to the user’s selections. Overall, this project helped me practice building an interactive data application and strengthened my understanding of how thoughtful filtering and feedback can make reports more useful.
 
 See reflection.md for what makes a good reflection — be specific, use the
 terminology from this assignment (grain, long vs. wide, vectorized .str methods,

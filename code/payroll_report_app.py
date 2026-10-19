@@ -44,3 +44,69 @@ Test it: pytest tests/test_pipeline.py -k app
 #
 # What the page does NOT do: cleaning, grouping, pivoting. If you find yourself
 # writing a groupby or a pivot_table here, that logic belongs in the package.
+
+import streamlit as st
+from payroll import (
+    build_history,
+    load_employees,
+    load_export,
+    summarize_employees,
+    hours_grid,
+    missed_weeks,
+    pay_by_month,
+)
+
+st.title("Salt City Coffee — Quarterly Payroll Report")
+st.write("Upload payroll exports to review hours, pay, and missed shifts.")
+
+roster = load_employees()
+uploads = st.file_uploader(
+    "Upload payroll exports",
+    key="exports",
+    accept_multiple_files=True,
+)
+
+if uploads:
+    history = build_history([load_export(upload) for upload in uploads], roster)
+
+    unmatched = history.loc[history["department"].isna(), "employeeid"].dropna().unique()
+    if len(unmatched):
+        st.warning("No department found for employeeid: " + ", ".join(map(str, unmatched)))
+
+    history = history.loc[history["department"].notna()].copy()
+    departments = ["All"] + sorted(history["department"].unique().tolist())
+    department = st.selectbox("Department", departments, key="department")
+
+    first_date = history["pay_date"].min().date()
+    last_date = history["pay_date"].max().date()
+    date_range = st.date_input("Dates", value=(first_date, last_date), key="dates")
+
+    selected = history
+    if department != "All":
+        selected = selected.loc[selected["department"] == department]
+    if isinstance(date_range, (tuple, list)) and len(date_range) == 2:
+        start_date, end_date = date_range
+        selected = selected.loc[
+            selected["pay_date"].dt.date.between(start_date, end_date)
+        ]
+
+    st.subheader(f"{department} payroll report")
+    metrics = st.columns(4)
+    metrics[0].metric("Weeks", selected["pay_date"].nunique())
+    metrics[1].metric("Employees", selected["employee_id"].nunique())
+    metrics[2].metric("Total hours", f"{selected['hours_worked'].sum():,.2f}")
+    metrics[3].metric("Total gross pay", f"${selected['gross_pay'].sum():,.2f}")
+
+    monthly_pay = pay_by_month(selected)
+    st.bar_chart(monthly_pay, x="month")
+    st.dataframe(summarize_employees(selected))
+    grid = hours_grid(selected)
+    st.dataframe(grid)
+    st.dataframe(missed_weeks(grid))
+    st.download_button(
+        "Download monthly pay",
+        data=monthly_pay.to_csv(index=False),
+        file_name="pay_by_month.csv",
+        mime="text/csv",
+        key="download",
+    )
