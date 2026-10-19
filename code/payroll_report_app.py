@@ -69,9 +69,14 @@ uploads = st.file_uploader(
 if uploads:
     history = build_history([load_export(upload) for upload in uploads], roster)
 
-    unmatched = history.loc[history["department"].isna(), "employeeid"].dropna().unique()
+    unmatched = (
+        history.loc[history["department"].isna(), "employeeid"].dropna().unique()
+    )
     if len(unmatched):
-        st.warning("No department found for employeeid: " + ", ".join(map(str, unmatched)))
+        st.warning(
+            "No department found for employeeid: "
+            + ", ".join(map(str, unmatched))
+        )
 
     history = history.loc[history["department"].notna()].copy()
     departments = ["All"] + sorted(history["department"].unique().tolist())
